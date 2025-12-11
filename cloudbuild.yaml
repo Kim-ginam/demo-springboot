@@ -1,18 +1,14 @@
 steps:
   # ##################################################
-  # 0. settings.xml 파일 생성 (인증 토큰 직접 주입)
-  # 이 스텝은 YAML 파싱 오류를 회피하며 인증 정보를 설정합니다.
+  # 0. settings.xml 템플릿 파일 생성 (토큰은 TOKEN_PLACEHOLDER로 임시 저장)
   # ##################################################
   - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'create-settings'
+    id: 'create-settings-template'
     entrypoint: 'bash'
     args: 
       - '-c'
       - |
-        # 1. 인증 토큰 획득 (Shell 변수에 저장)
-        AUTH_TOKEN=$(gcloud auth print-access-token)
-        
-        # 2. settings.xml 파일 내용 정의 및 토큰 삽입
+        # $PROJECT_ID는 Cloud Build가 치환하므로 그대로 둡니다.
         cat > settings.xml << EOF
         <settings>
           <mirrors>
@@ -27,7 +23,7 @@ steps:
             <server>
               <id>artifact-registry-repo</id>
               <username>oauth2accesstoken</username>
-              <password>$AUTH_TOKEN</password>
+              <password>TOKEN_PLACEHOLDER</password>
             </server>
           </servers>
         </settings>
@@ -35,15 +31,28 @@ steps:
     waitFor: ['-']
 
   # ##################################################
-  # 1. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
+  # 1. 인증 토큰 획득 및 파일에 주입 (Shell 변수 사용 최소화)
+  # ##################################################
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'inject-token'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      # gcloud auth print-access-token의 결과를 직접 sed 명령에 파이프라인으로 연결
+      - |
+        gcloud auth print-access-token | xargs -I {} sed -i 's/TOKEN_PLACEHOLDER/{}/g' settings.xml
+    waitFor: ['create-settings-template']
+    
+  # ##################################################
+  # 2. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
     args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
-    waitFor: ['create-settings']
+    waitFor: ['inject-token'] # 🌟 토큰 주입 후 실행
     id: 'mvn-package'
 
   # ##################################################
-  # 2. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
+  # 3. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
     args: ['deploy', '-s', 'settings.xml']
@@ -51,7 +60,7 @@ steps:
     id: 'mvn-deploy'
 
   # ##################################################
-  # 3. Docker build (Dockerfile 기반)
+  # 4. Docker build (Dockerfile 기반)
   # ##################################################
   - name: 'gcr.io/cloud-builders/docker'
     args: [
@@ -63,7 +72,7 @@ steps:
     id: 'docker-build'
 
   # ##################################################
-  # 4. Docker push
+  # 5. Docker push
   # ##################################################
   - name: 'gcr.io/cloud-builders/docker'
     args: [
@@ -74,7 +83,7 @@ steps:
     id: 'docker-push'
 
   # ##################################################
-  # 5. Deploy to Cloud Run
+  # 6. Deploy to Cloud Run
   # ##################################################
   - name: 'gcr.io/cloud-builders/gcloud'
     args: [
