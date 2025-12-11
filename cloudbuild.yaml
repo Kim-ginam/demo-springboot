@@ -30,3 +30,8 @@ steps:
 
 images:
   - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA'
+
+options:
+  # CLOUD_LOGGING_ONLY: 로그를 Cloud Logging에만 기록하도록 지정하여 에러를 해결합니다.
+  # 이는 사용자 정의 서비스 계정 사용 시 필수 조건 중 하나를 만족시킵니다.
+  logging: CLOUD_LOGGING_ONLY  
