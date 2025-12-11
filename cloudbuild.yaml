@@ -1,31 +1,15 @@
 steps:
   # ##################################################
-  # 0. 인증 활성화 (Gcloud 서비스 계정으로 Maven 인증 활성화)
-  # 이 스텝은 Cloud Build 서비스 계정의 키를 사용하여 Maven 환경에 인증을 주입합니다.
-  # ##################################################
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'setup-auth'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      # gcloud auth activate-service-account 명령이 실행되면 
-      # GOOGLE_APPLICATION_CREDENTIALS 환경 변수가 설정되고, 
-      # 이를 기반으로 Maven 빌더가 인증을 시도합니다.
-      - |
-        gcloud auth activate-service-account api-demo-service-account@angelic-bond-480000-e2.iam.gserviceaccount.com --key-file=/builder/home/google/service_account.json
-    waitFor: ['-']
-    
-  # ##################################################
-  # 1. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
+  # 0. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
+  #    인증 스텝 제거. Cloud Build의 자동 인증 기능에 의존합니다.
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
-    # settings.xml 파일을 사용하여 미러링 설정 적용
     args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
-    waitFor: ['setup-auth'] # 인증 설정 완료 후 실행
+    waitFor: ['-'] # 시작과 동시에 실행
     id: 'mvn-package'
 
   # ##################################################
-  # 2. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
+  # 1. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
     args: ['deploy', '-s', 'settings.xml']
@@ -33,7 +17,7 @@ steps:
     id: 'mvn-deploy'
 
   # ##################################################
-  # 3. Docker build (Dockerfile 기반)
+  # 2. Docker build (Dockerfile 기반)
   # ##################################################
   - name: 'gcr.io/cloud-builders/docker'
     args: [
@@ -45,7 +29,7 @@ steps:
     id: 'docker-build'
 
   # ##################################################
-  # 4. Docker push
+  # 3. Docker push
   # ##################################################
   - name: 'gcr.io/cloud-builders/docker'
     args: [
@@ -56,7 +40,7 @@ steps:
     id: 'docker-push'
 
   # ##################################################
-  # 5. Deploy to Cloud Run
+  # 4. Deploy to Cloud Run
   # ##################################################
   - name: 'gcr.io/cloud-builders/gcloud'
     args: [
