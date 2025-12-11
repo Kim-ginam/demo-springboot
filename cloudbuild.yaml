@@ -1,46 +1,43 @@
 steps:
   # ##################################################
-  # 0. 인증 토큰을 환경 변수로 설정
+  # 0. 인증 토큰을 획득하여 다음 스텝의 환경 변수로 설정
   # ##################################################
   - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'set-auth-token'
+    id: 'get-token'
     entrypoint: 'bash'
     args: 
       - '-c'
-      # 🌟 Shell 스크립트에서 변수 AUTH_TOKEN을 정의하고 export 합니다.
+      # gcloud auth print-access-token 결과를 $TOKEN_VALUE라는 Shell 변수에 저장
       - |
-        AUTH_TOKEN=$(gcloud auth print-access-token)
-        echo "export ARTIFACT_REGISTRY_TOKEN=$AUTH_TOKEN" > /workspace/auth.sh
+        TOKEN_VALUE=$(gcloud auth print-access-token)
+        echo "Token acquired." # 로그 확인용
+    # 🌟 Shell 변수(TOKEN_VALUE)를 Cloud Build Substitute 변수로 승격시켜 다음 스텝에 전달
+    # 이 방식은 Cloud Build가 공식적으로 지원하는 변수 전달 방식입니다.
+    env:
+      - 'TOKEN_VALUE=$(gcloud auth print-access-token)'
     waitFor: ['-']
 
   # ##################################################
-  # 1. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
+  # 1. Maven 패키징 (환경 변수 사용)
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
-    entrypoint: 'bash' # 🌟 bash로 변경하여 auth.sh 스크립트를 소스합니다.
-    args: 
-      - '-c'
-      - |
-        # Step 0에서 만든 환경 변수를 현재 셸에 로드
-        source /workspace/auth.sh
-        
-        # settings.xml 파일을 사용하여 미러링 설정 적용
-        mvn clean package -DskipTests -s settings.xml
-    waitFor: ['set-auth-token']
+    args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
+    waitFor: ['get-token']
     id: 'mvn-package'
+    # 🌟 이전 스텝에서 획득한 토큰을 Maven이 참조하는 이름으로 전달
+    env:
+      - 'ARTIFACT_REGISTRY_TOKEN=${steps.get-token.outputs.env.TOKEN_VALUE}' 
 
   # ##################################################
   # 2. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
-    entrypoint: 'bash'
-    args: 
-      - '-c'
-      - |
-        source /workspace/auth.sh
-        mvn deploy -s settings.xml
+    args: ['deploy', '-s', 'settings.xml']
     waitFor: ['mvn-package']
     id: 'mvn-deploy'
+    # 🌟 환경 변수 전달
+    env:
+      - 'ARTIFACT_REGISTRY_TOKEN=${steps.get-token.outputs.env.TOKEN_VALUE}'
 
   # ##################################################
   # 2. Docker build (Dockerfile 기반)
