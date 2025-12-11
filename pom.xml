@@ -32,18 +32,19 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>artifact-registry-repo</id> <url>artifactregistry://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
+            <id>artifact-registry-repo</id> 
+            <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
         </snapshotRepository>
         <repository>
             <id>artifact-registry-repo</id>
-            <url>artifactregistry://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
+            <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
         </repository>
     </distributionManagement>
 
     <repositories>
         <repository>
             <id>artifact-registry-repo</id>
-            <url>artifactregistry://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
+            <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -54,19 +55,11 @@
     </repositories>
 
     <build>
-        <extensions>
-            <extension>
-                <groupId>com.google.cloud.artifactregistry</groupId>
-                <artifactId>artifactregistry-maven-wagon</artifactId>
-                <version>2.2.0</version>
-            </extension>
-        </extensions>
-
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
-    </build>
+        </build>
 </project>
