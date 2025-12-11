@@ -1,0 +1,26 @@
+<settings>
+  <mirrors>
+    <mirror>
+      <id>artifact-registry-repo</id>
+      <name>AR Mirror</name>
+      <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
+      <mirrorOf>central</mirrorOf> 
+    </mirror>
+  </mirrors>
+  <profiles>
+    <profile>
+      <id>default</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>https://repo.maven.apache.org/maven2</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</snapshots>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+</settings>
