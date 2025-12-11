@@ -1,36 +1,17 @@
 steps:
-  # 0. settings.xml 템플릿 파일 생성 및 토큰 주입
+  # 0. settings.xml 템플릿 파일 생성 및 토큰 주입 (가장 안정적인 방식)
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'create-settings'
     entrypoint: 'bash'
     args: 
       - '-c'
       - |
-        # 1. 인증 토큰 획득
-        AUTH_TOKEN=$(gcloud auth print-access-token)
-        
-        # 2. settings.xml 파일 내용 정의 (HTTPS 미러링 및 토큰 주입)
-        # $PROJECT_ID는 Cloud Build가 처리하므로 그대로 둡니다.
-        SETTINGS_CONTENT='<settings>
-          <mirrors>
-            <mirror>
-              <id>artifact-registry-repo</id>
-              <name>AR Mirror</name>
-              <url>https://asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo</url>
-              <mirrorOf>central</mirrorOf>
-            </mirror>
-          </mirrors>
-          <servers>
-            <server>
-              <id>artifact-registry-repo</id>
-              <username>oauth2accesstoken</username>
-              <password>'$AUTH_TOKEN'</password> 
-            </server>
-          </servers>
-        </settings>'
-        
-        # 3. 파일 생성
+        # 1. settings.xml 파일 내용 (프로젝트 변수와 토큰은 빈칸으로 둡니다.)
+        SETTINGS_CONTENT='<settings><mirrors><mirror><id>artifact-registry-repo</id><name>AR Mirror</name><url>https://asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo</url><mirrorOf>central</mirrorOf></mirror></mirrors><servers><server><id>artifact-registry-repo</id><username>oauth2accesstoken</username><password>TOKEN_PLACEHOLDER</password></server></servers></settings>'
         echo "$SETTINGS_CONTENT" > settings.xml
+        
+        # 2. 토큰을 획득하여 파일에 직접 치환
+        gcloud auth print-access-token | tr -d '\n' | xargs -I {} sed -i 's/TOKEN_PLACEHOLDER/{}/g' settings.xml
     waitFor: ['-']
 
   # 1. Maven 패키징 (이미지 복원)
