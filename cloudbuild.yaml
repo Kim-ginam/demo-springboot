@@ -1,28 +1,23 @@
 steps:
-  # 0. settings.xml 파일 생성 (Maven Central 미러링 설정 주입)
-  # 🌟 핵심 수정: <pluginGroups>를 추가하여 Artifact Registry Wagon 플러그인 로드
+  # 0. settings.xml 파일 생성 (HTTPS 프로토콜 사용)
   - name: 'gcr.io/cloud-builders/gcloud' 
     id: 'create-settings'
     entrypoint: 'sh'
     args: 
       - '-c'
-      # $PROJECT_ID는 Cloud Build가 자동으로 채웁니다.
+      # 🌟 HTTPS 프로토콜로 변경하여 Wagon 확장 에러를 우회합니다.
       - |
-        echo '<settings><mirrors><mirror><id>artifact-registry-repo</id><name>AR Mirror</name><url>artifactregistry://asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo</url><mirrorOf>central</mirrorOf></mirror></mirrors><servers><server><id>artifact-registry-repo</id></server></servers><pluginGroups><pluginGroup>com.google.cloud.artifactregistry</pluginGroup></pluginGroups></settings>' > settings.xml
+        echo '<settings><mirrors><mirror><id>artifact-registry-repo</id><name>AR Mirror</name><url>https://asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo</url><mirrorOf>central</mirrorOf></mirror></mirrors><servers><server><id>artifact-registry-repo</id></server></servers></settings>' > settings.xml
     waitFor: ['-']
 
-  # 1. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
-  # 🌟 이미지 변경: 표준 maven:3.9-jdk-17 이미지 사용
-  - name: 'maven:3.9-jdk-17' 
-    entrypoint: 'mvn'
+  # 1. Maven 패키징 (이미지 복원)
+  - name: 'gcr.io/cloud-builders/mvn' # 🌟 안정적인 Google 빌더로 복원
     args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
     waitFor: ['create-settings']
     id: 'mvn-package'
 
   # 2. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
-  # 🌟 이미지 변경: 표준 maven:3.9-jdk-17 이미지 사용
-  - name: 'maven:3.9-jdk-17'
-    entrypoint: 'mvn'
+  - name: 'gcr.io/cloud-builders/mvn' # 🌟 안정적인 Google 빌더로 복원
     args: ['deploy', '-s', 'settings.xml']
     waitFor: ['mvn-package']
     id: 'mvn-deploy'
