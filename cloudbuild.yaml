@@ -1,12 +1,16 @@
 steps:
-  # 0. settings.xml 템플릿 파일 생성 및 토큰 주입 (토큰을 변수로 사용하지 않는 방식)
+  # 0. settings.xml 템플릿 파일 생성 및 토큰 주입 (가장 안정적인 방식)
+  # 이 단계는 Cloud Build의 substitution 파서가 Shell 변수를 오해하지 않도록 설계되었습니다.
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'create-settings'
     entrypoint: 'bash'
     args: 
       - '-c'
       - |
-        # 1. settings.xml 템플릿 내용을 바로 파일에 씁니다.
+        # 1. 인증 토큰을 Shell 환경 변수로 획득
+        export MAVEN_TOKEN=$(gcloud auth print-access-token)
+        
+        # 2. settings.xml 파일 생성 (환경 변수 사용)
         cat > settings.xml << EOF
         <settings>
           <mirrors>
@@ -21,15 +25,15 @@ steps:
             <server>
               <id>artifact-registry-repo</id>
               <username>oauth2accesstoken</username>
-              <password>TOKEN_PLACEHOLDER</password> 
+              <password>\$MAVEN_TOKEN</password> 
             </server>
           </servers>
         </settings>
         EOF
-        
-        # 2. 획득한 토큰을 사용하여 TOKEN_PLACEHOLDER를 치환합니다. (Shell 변수 사용 최소화)
-        AUTH_TOKEN=$(gcloud auth print-access-token)
-        sed -i "s/TOKEN_PLACEHOLDER/$AUTH_TOKEN/" settings.xml
+
+        # 3. 환경 변수 MAVEN_TOKEN을 파일 내용에 치환 (sed 사용)
+        # \$MAVEN_TOKEN을 실제 토큰 값으로 치환합니다.
+        sed -i "s|\\\$MAVEN_TOKEN|$MAVEN_TOKEN|g" settings.xml
     waitFor: ['-']
 
   # 1. Maven 패키징 (이미지 복원)
