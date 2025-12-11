@@ -1,10 +1,14 @@
 steps:
   # ##################################################
   # 0. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
-  #    인증 스텝 제거. Cloud Build의 자동 인증 기능에 의존합니다.
+  # 🌟 인증 플러그인 강제 적용: 401 Unauthorized 오류 해결
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
-    args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
+    args: [
+      'clean', 'package', '-DskipTests', '-s', 'settings.xml',
+      # Artifact Registry 인증 플러그인을 활성화하여 401 에러를 해결합니다.
+      '-Dartifactregistry.auth.enabled=true'
+    ]
     waitFor: ['-'] # 시작과 동시에 실행
     id: 'mvn-package'
 
@@ -12,7 +16,10 @@ steps:
   # 1. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
-    args: ['deploy', '-s', 'settings.xml']
+    args: [
+      'deploy', '-s', 'settings.xml',
+      '-Dartifactregistry.auth.enabled=true'
+    ]
     waitFor: ['mvn-package']
     id: 'mvn-deploy'
 
@@ -25,7 +32,7 @@ steps:
       '-t', 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA',
       '.'
     ]
-    waitFor: ['mvn-deploy']
+    waitFor: ['mvn-deploy'] # JAR 파일 배포 완료 후 Docker 빌드 시작
     id: 'docker-build'
 
   # ##################################################
@@ -58,6 +65,6 @@ steps:
 images:
   - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA'
 
-# 에러 해결을 위해 추가한 옵션
+# 옵션 설정
 options:
   logging: CLOUD_LOGGING_ONLY
