@@ -1,17 +1,19 @@
 steps:
-  # cloudbuild.yaml의 Step #0 ("create-settings") 수정
+  # ##################################################
+  # Step 0: settings.xml 생성 (YAML 오류 수정)
+  # ##################################################
   - name: 'gcr.io/cloud-builders/gcloud' 
     id: 'create-settings'
-    entrypoint: 'bash' # 🌟 entrypoint를 bash로 명시하여 Shell 실행을 명확히 합니다.
+    entrypoint: 'bash' # entrypoint를 bash로 명확히 합니다.
     args: 
       - '-c'
+      # 🌟 스크립트 내용은 | 뒤에 들여쓰기를 명확히 합니다.
       - |
-        # 🌟 Shell 스크립트 전체를 단일 문자열로 전달합니다.
-        # 이 방식은 $AUTH_TOKEN이 YAML 파서에 의해 오해될 가능성을 줄입니다.
         AUTH_TOKEN=$(gcloud auth print-access-token)
         SETTINGS_XML='<settings><mirrors><mirror><id>artifact-registry-repo</id><name>AR Mirror</name><url>https://asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo</url><mirrorOf>central</mirrorOf></mirror></mirrors><servers><server><id>artifact-registry-repo</id><username>oauth2accesstoken</username><password>'$AUTH_TOKEN'</password></server></servers></settings>'
         echo "$SETTINGS_XML" > settings.xml
-      waitFor: ['-']
+    # 🌟 waitFor는 args와 같은 레벨 (Step 레벨)에 있어야 합니다.
+    waitFor: ['-']
 
   # 1. Maven 패키징 (이미지 복원)
   - name: 'gcr.io/cloud-builders/mvn' # 🌟 안정적인 Google 빌더로 복원
