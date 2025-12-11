@@ -5,7 +5,6 @@ steps:
     id: 'mvn-package'
 
   # 2. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
-  # 이 스텝은 pom.xml의 <distributionManagement> 섹션을 사용합니다.
   - name: 'gcr.io/cloud-builders/mvn'
     args: ['deploy']
     waitFor: ['mvn-package']
@@ -18,7 +17,7 @@ steps:
       '-t', 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA',
       '.'
     ]
-    # deploy 완료 후 이미지 빌드
+    # mvn deploy 완료 후 이미지 빌드
     waitFor: ['mvn-deploy'] 
     id: 'docker-build'
 
@@ -29,6 +28,7 @@ steps:
       'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA'
     ]
     waitFor: ['docker-build']
+    id: 'docker-push' # 🌟 ID 명시 (5단계에서 사용)
 
   # 5. Deploy to Cloud Run (Cloud Run 배포)
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -38,15 +38,17 @@ steps:
       '--region=asia-northeast3',
       '--platform=managed',
       '--allow-unauthenticated',
-      # 단일 서비스 계정 사용: 빌드 실행 SA와 런타임 SA를 통일합니다.
+      # 단일 서비스 계정 사용
       '--service-account=api-demo-service-account@angelic-bond-480000-e2.iam.gserviceaccount.com'
     ]
-    waitFor: ['-'] # Docker 이미지 푸시 후 바로 배포 가능
+    # 🌟 핵심 수정: Docker Push가 완료될 때까지 명확하게 대기
+    waitFor: ['docker-push']
+    id: 'cloud-run-deploy'
 
 # 최종 이미지 결과물 명시
 images:
   - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA'
 
-# 에러 해결을 위해 추가한 옵션
+# 이전에 권한 및 로그 에러 해결을 위해 추가한 옵션
 options:
   logging: CLOUD_LOGGING_ONLY
