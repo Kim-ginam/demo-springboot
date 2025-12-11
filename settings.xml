@@ -7,38 +7,29 @@
       <mirrorOf>central</mirrorOf> 
     </mirror>
   </mirrors>
+
+  <servers>
+    <server>
+      <id>artifact-registry-repo</id>
+      <username>oauth2accesstoken</username>
+      <password>TOKEN_PLACEHOLDER</password> 
+    </server>
+  </servers>
+
   <profiles>
     <profile>
-      <id>artifact-registry-auth</id>
+      <id>default</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
       <repositories>
         <repository>
-          <id>artifact-registry-repo</id>
-          <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
-        </repository>
-        <repository>
           <id>central</id>
           <url>https://repo.maven.apache.org/maven2</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
         </repository>
       </repositories>
-      <pluginRepositories>
-        <pluginRepository>
-          <id>artifact-registry-repo</id>
-          <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
-        </pluginRepository>
-      </pluginRepositories>
     </profile>
   </profiles>
-  <servers>
-    <server>
-      <id>artifact-registry-repo</id>
-      <configuration>
-        <auth>
-          <credentialHelper>google</credentialHelper>
-        </auth>
-      </configuration>
-    </server>
-  </servers>
 </settings>
