@@ -7,31 +7,40 @@ steps:
     entrypoint: 'bash'
     args: 
       - '-c'
-      # gcloud auth print-access-token 결과를 ARTIFACT_REGISTRY_TOKEN 환경 변수에 저장
+      # 🌟 Shell 스크립트에서 변수 AUTH_TOKEN을 정의하고 export 합니다.
       - |
-        export ARTIFACT_REGISTRY_TOKEN=$(gcloud auth print-access-token)
-        # 다음 스텝에서 이 환경 변수를 사용하도록 설정
-    env: ['ARTIFACT_REGISTRY_TOKEN']
+        AUTH_TOKEN=$(gcloud auth print-access-token)
+        echo "export ARTIFACT_REGISTRY_TOKEN=$AUTH_TOKEN" > /workspace/auth.sh
     waitFor: ['-']
 
   # ##################################################
   # 1. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
-    args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
+    entrypoint: 'bash' # 🌟 bash로 변경하여 auth.sh 스크립트를 소스합니다.
+    args: 
+      - '-c'
+      - |
+        # Step 0에서 만든 환경 변수를 현재 셸에 로드
+        source /workspace/auth.sh
+        
+        # settings.xml 파일을 사용하여 미러링 설정 적용
+        mvn clean package -DskipTests -s settings.xml
     waitFor: ['set-auth-token']
     id: 'mvn-package'
-    # 🌟 Step 0에서 설정한 환경 변수를 이 스텝에도 전달
-    env: ['ARTIFACT_REGISTRY_TOKEN']
 
   # ##################################################
   # 2. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
-    args: ['deploy', '-s', 'settings.xml']
+    entrypoint: 'bash'
+    args: 
+      - '-c'
+      - |
+        source /workspace/auth.sh
+        mvn deploy -s settings.xml
     waitFor: ['mvn-package']
     id: 'mvn-deploy'
-    env: ['ARTIFACT_REGISTRY_TOKEN']
 
   # ##################################################
   # 2. Docker build (Dockerfile 기반)
