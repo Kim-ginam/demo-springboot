@@ -1,70 +1,24 @@
 steps:
-  # ##################################################
-  # 0. 인증 토큰을 획득하여 다음 스텝의 환경 변수로 설정
-  # ##################################################
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'get-token'
-    entrypoint: 'bash'
-    args: 
-      - '-c'
-      # gcloud auth print-access-token 결과를 $TOKEN_VALUE라는 Shell 변수에 저장
-      - |
-        TOKEN_VALUE=$(gcloud auth print-access-token)
-        echo "Token acquired." # 로그 확인용
-    # 🌟 Shell 변수(TOKEN_VALUE)를 Cloud Build Substitute 변수로 승격시켜 다음 스텝에 전달
-    # 이 방식은 Cloud Build가 공식적으로 지원하는 변수 전달 방식입니다.
-    env:
-      - 'TOKEN_VALUE=$(gcloud auth print-access-token)'
-    waitFor: ['-']
-
-  # ##################################################
-  # 1. Maven 패키징 (환경 변수 사용)
-  # ##################################################
+  # Build JAR
   - name: 'gcr.io/cloud-builders/mvn'
-    args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
-    waitFor: ['get-token']
-    id: 'mvn-package'
-    # 🌟 이전 스텝에서 획득한 토큰을 Maven이 참조하는 이름으로 전달
-    env:
-      - 'ARTIFACT_REGISTRY_TOKEN=${steps.get-token.outputs.env.TOKEN_VALUE}' 
+    args: ['clean', 'package', '-DskipTests']
 
-  # ##################################################
-  # 2. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
-  # ##################################################
-  - name: 'gcr.io/cloud-builders/mvn'
-    args: ['deploy', '-s', 'settings.xml']
-    waitFor: ['mvn-package']
-    id: 'mvn-deploy'
-    # 🌟 환경 변수 전달
-    env:
-      - 'ARTIFACT_REGISTRY_TOKEN=${steps.get-token.outputs.env.TOKEN_VALUE}'
-
-  # ##################################################
-  # 2. Docker build (Dockerfile 기반)
-  # ##################################################
+  # Docker build
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-t', 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA',
       '.'
     ]
-    waitFor: ['mvn-deploy'] # JAR 파일 배포 완료 후 Docker 빌드 시작
-    id: 'docker-build'
 
-  # ##################################################
-  # 3. Docker push
-  # ##################################################
+  # Docker push
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'push',
       'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA'
     ]
-    waitFor: ['docker-build']
-    id: 'docker-push'
 
-  # ##################################################
-  # 4. Deploy to Cloud Run
-  # ##################################################
+  # Deploy to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args: [
       'run', 'deploy', 'demo-service',
@@ -74,13 +28,11 @@ steps:
       '--allow-unauthenticated',
       '--service-account=api-demo-service-account@angelic-bond-480000-e2.iam.gserviceaccount.com'
     ]
-    waitFor: ['docker-push']
-    id: 'cloud-run-deploy'
 
-# 최종 이미지 결과물 명시
 images:
   - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA'
 
-# 옵션 설정
 options:
-  logging: CLOUD_LOGGING_ONLY
+  # CLOUD_LOGGING_ONLY: 로그를 Cloud Logging에만 기록하도록 지정하여 에러를 해결합니다.
+  # 이는 사용자 정의 서비스 계정 사용 시 필수 조건 중 하나를 만족시킵니다.
+  logging: CLOUD_LOGGING_ONLY  
