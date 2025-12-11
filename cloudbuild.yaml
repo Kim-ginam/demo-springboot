@@ -1,17 +1,35 @@
 steps:
-  # 0. settings.xml 템플릿 파일 생성 및 토큰 주입 (가장 안정적인 방식)
+  # 0. settings.xml 템플릿 파일 생성 및 토큰 주입 (토큰을 변수로 사용하지 않는 방식)
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'create-settings'
     entrypoint: 'bash'
     args: 
       - '-c'
       - |
-        # 1. settings.xml 파일 내용 (프로젝트 변수와 토큰은 빈칸으로 둡니다.)
-        SETTINGS_CONTENT='<settings><mirrors><mirror><id>artifact-registry-repo</id><name>AR Mirror</name><url>https://asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo</url><mirrorOf>central</mirrorOf></mirror></mirrors><servers><server><id>artifact-registry-repo</id><username>oauth2accesstoken</username><password>TOKEN_PLACEHOLDER</password></server></servers></settings>'
-        echo "$SETTINGS_CONTENT" > settings.xml
+        # 1. settings.xml 템플릿 내용을 바로 파일에 씁니다.
+        cat > settings.xml << EOF
+        <settings>
+          <mirrors>
+            <mirror>
+              <id>artifact-registry-repo</id>
+              <name>AR Mirror</name>
+              <url>https://asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo</url>
+              <mirrorOf>central</mirrorOf>
+            </mirror>
+          </mirrors>
+          <servers>
+            <server>
+              <id>artifact-registry-repo</id>
+              <username>oauth2accesstoken</username>
+              <password>TOKEN_PLACEHOLDER</password> 
+            </server>
+          </servers>
+        </settings>
+        EOF
         
-        # 2. 토큰을 획득하여 파일에 직접 치환
-        gcloud auth print-access-token | tr -d '\n' | xargs -I {} sed -i 's/TOKEN_PLACEHOLDER/{}/g' settings.xml
+        # 2. 획득한 토큰을 사용하여 TOKEN_PLACEHOLDER를 치환합니다. (Shell 변수 사용 최소화)
+        AUTH_TOKEN=$(gcloud auth print-access-token)
+        sed -i "s/TOKEN_PLACEHOLDER/$AUTH_TOKEN/" settings.xml
     waitFor: ['-']
 
   # 1. Maven 패키징 (이미지 복원)
