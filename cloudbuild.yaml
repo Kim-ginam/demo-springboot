@@ -25,7 +25,7 @@ steps:
       '--image=asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA',
       '--region=asia-northeast3',
       '--platform=managed',
-      '--allow-unauthenticated'
+      '--allow-unauthenticated',
       '--service-account=api-demo-service-account@angelic-bond-480000-e2.iam.gserviceaccount.com'
     ]
 
