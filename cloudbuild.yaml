@@ -10,9 +10,8 @@ steps:
       # 🌟 gcloud 명령으로 Artifact Registry에 인증 토큰을 설정
       - |
         # 이 명령어는 Cloud Build 워커의 ~/.m2/settings.xml 파일에 인증 정보를 기록하려고 시도합니다.
-        gcloud auth configure-Aptifactory --repository=asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo --project=$PROJECT_ID --quiet
+        gcloud auth configure-maven --repository=asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo --project=$PROJECT_ID --quiet
     waitFor: ['-']
-
   # ##################################################
   # 1. settings.xml 파일 생성 (미러링 설정만 포함)
   # ##################################################
