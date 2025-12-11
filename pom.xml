@@ -21,6 +21,7 @@
     <properties>
         <java.version>17</java.version>
         <spring.boot.version>3.2.0</spring.boot.version>
+        <artifactregistry-wagon.version>2.2.0</artifactregistry-wagon.version>
     </properties>
 
     <dependencies>
@@ -28,7 +29,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-    </dependencies>
+        </dependencies>
 
     <distributionManagement>
         <snapshotRepository>
@@ -55,11 +56,18 @@
     </repositories>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>com.google.cloud.artifactregistry</groupId>
+                <artifactId>artifactregistry-maven-wagon</artifactId>
+                <version>${artifactregistry-wagon.version}</version>
+            </extension>
+        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
-        </build>
+    </build>
 </project>
