@@ -1,36 +1,50 @@
 steps:
-  # 1. Maven 패키징 (JAR 파일 생성)
+  # 0. settings.xml 파일 생성 (Maven Central 미러링 설정 주입)
+  - name: 'gcr.io/cloud-builders/gcloud' 
+    id: 'create-settings'
+    entrypoint: 'sh'
+    args: 
+      - '-c'
+      # 🌟 settings.xml 내용을 인라인으로 생성합니다.
+      - |
+        echo '<settings><mirrors><mirror><id>artifact-registry-repo</id><name>AR Mirror</name><url>artifactregistry://asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo</url><mirrorOf>central</mirrorOf></mirror></mirrors></settings>' > settings.xml
+    waitFor: ['-']
+
+  # 1. Maven 패키징 (의존성 다운로드 및 JAR 생성)
+  # -s settings.xml 플래그로 미러링 설정을 강제합니다.
   - name: 'gcr.io/cloud-builders/mvn'
-    args: ['clean', 'package', '-DskipTests']
+    args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
+    waitFor: ['create-settings']
     id: 'mvn-package'
 
   # 2. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
+  # -s settings.xml 플래그를 사용하여 인증 처리를 지원합니다.
   - name: 'gcr.io/cloud-builders/mvn'
-    args: ['deploy']
+    args: ['deploy', '-s', 'settings.xml']
     waitFor: ['mvn-package']
     id: 'mvn-deploy'
 
-  # 3. Docker build (Docker 이미지 생성)
+  # 3. Docker build (Dockerfile 기반)
+  # Dockerfile에서 mvn 명령을 제거했으므로, JAR 파일은 target 폴더에 이미 존재합니다.
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-t', 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA',
       '.'
     ]
-    # mvn deploy 완료 후 이미지 빌드
     waitFor: ['mvn-deploy'] 
     id: 'docker-build'
 
-  # 4. Docker push (Artifact Registry의 Docker 리포지토리에 푸시)
+  # 4. Docker push
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'push',
       'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA'
     ]
     waitFor: ['docker-build']
-    id: 'docker-push' # 🌟 ID 명시 (5단계에서 사용)
+    id: 'docker-push'
 
-  # 5. Deploy to Cloud Run (Cloud Run 배포)
+  # 5. Deploy to Cloud Run
   - name: 'gcr.io/cloud-builders/gcloud'
     args: [
       'run', 'deploy', 'demo-service',
@@ -38,17 +52,13 @@ steps:
       '--region=asia-northeast3',
       '--platform=managed',
       '--allow-unauthenticated',
-      # 단일 서비스 계정 사용
       '--service-account=api-demo-service-account@angelic-bond-480000-e2.iam.gserviceaccount.com'
     ]
-    # 🌟 핵심 수정: Docker Push가 완료될 때까지 명확하게 대기
     waitFor: ['docker-push']
     id: 'cloud-run-deploy'
 
-# 최종 이미지 결과물 명시
 images:
   - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA'
 
-# 이전에 권한 및 로그 에러 해결을 위해 추가한 옵션
 options:
   logging: CLOUD_LOGGING_ONLY
