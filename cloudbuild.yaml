@@ -1,27 +1,37 @@
 steps:
   # ##################################################
-  # 0. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
-  # 🌟 인증 플러그인 강제 적용: 401 Unauthorized 오류 해결
+  # 0. 인증 토큰을 환경 변수로 설정
   # ##################################################
-  - name: 'gcr.io/cloud-builders/mvn'
-    args: [
-      'clean', 'package', '-DskipTests', '-s', 'settings.xml',
-      # Artifact Registry 인증 플러그인을 활성화하여 401 에러를 해결합니다.
-      '-Dartifactregistry.auth.enabled=true'
-    ]
-    waitFor: ['-'] # 시작과 동시에 실행
-    id: 'mvn-package'
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'set-auth-token'
+    entrypoint: 'bash'
+    args: 
+      - '-c'
+      # gcloud auth print-access-token 결과를 ARTIFACT_REGISTRY_TOKEN 환경 변수에 저장
+      - |
+        export ARTIFACT_REGISTRY_TOKEN=$(gcloud auth print-access-token)
+        # 다음 스텝에서 이 환경 변수를 사용하도록 설정
+    env: ['ARTIFACT_REGISTRY_TOKEN']
+    waitFor: ['-']
 
   # ##################################################
-  # 1. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
+  # 1. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
-    args: [
-      'deploy', '-s', 'settings.xml',
-      '-Dartifactregistry.auth.enabled=true'
-    ]
+    args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
+    waitFor: ['set-auth-token']
+    id: 'mvn-package'
+    # 🌟 Step 0에서 설정한 환경 변수를 이 스텝에도 전달
+    env: ['ARTIFACT_REGISTRY_TOKEN']
+
+  # ##################################################
+  # 2. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
+  # ##################################################
+  - name: 'gcr.io/cloud-builders/mvn'
+    args: ['deploy', '-s', 'settings.xml']
     waitFor: ['mvn-package']
     id: 'mvn-deploy'
+    env: ['ARTIFACT_REGISTRY_TOKEN']
 
   # ##################################################
   # 2. Docker build (Dockerfile 기반)
