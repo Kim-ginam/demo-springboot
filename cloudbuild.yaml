@@ -1,12 +1,13 @@
 steps:
-  # 0. settings.xml 템플릿 파일 생성 및 인증 설정
+  # 0. settings.xml 파일 생성 (인증 헬퍼 사용)
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'create-settings'
     entrypoint: 'bash'
     args: 
       - '-c'
       - |
-        # settings.xml 파일 내용 (Gcloud Auth 명령을 직접 password 필드에 주입)
+        # 🌟 Maven 인증 헬퍼를 사용하는 settings.xml 내용을 직접 작성합니다.
+        # 이 방식은 Cloud Build 환경에서 가장 안정적으로 인증 문제를 해결합니다.
         cat > settings.xml << EOF
         <settings>
           <mirrors>
@@ -20,8 +21,11 @@ steps:
           <servers>
             <server>
               <id>artifact-registry-repo</id>
-              <username>oauth2accesstoken</username>
-              <password>NOT_USED</password> 
+              <configuration>
+                <auth>
+                  <credentialHelper>google</credentialHelper>
+                </auth>
+              </configuration>
             </server>
           </servers>
         </settings>
