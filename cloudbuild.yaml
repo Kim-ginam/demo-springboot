@@ -1,60 +1,27 @@
 steps:
   # ##################################################
-  # 0. settings.xml 파일 생성 (YAML 오류 회피 및 인증/미러링 설정)
+  # 0. 인증 활성화 (Gcloud 서비스 계정으로 Maven 인증 활성화)
+  # 이 스텝은 Cloud Build 서비스 계정의 키를 사용하여 Maven 환경에 인증을 주입합니다.
   # ##################################################
   - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'create-settings'
+    id: 'setup-auth'
     entrypoint: 'bash'
-    args: 
+    args:
       - '-c'
+      # gcloud auth activate-service-account 명령이 실행되면 
+      # GOOGLE_APPLICATION_CREDENTIALS 환경 변수가 설정되고, 
+      # 이를 기반으로 Maven 빌더가 인증을 시도합니다.
       - |
-        # 1. 인증 토큰 획득 (Shell 변수에 저장)
-        AUTH_TOKEN=$(gcloud auth print-access-token)
-        
-        # 2. settings.xml 파일 내용 정의 (미러링 대상 조정 및 Central Repository 명시)
-        cat > settings.xml << EOF
-        <settings>
-          <mirrors>
-            <mirror>
-              <id>artifact-registry-repo</id>
-              <name>AR Mirror</name>
-              <url>https://asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo</url>
-              <mirrorOf>central</mirrorOf> 
-            </mirror>
-          </mirrors>
-          <profiles>
-            <profile>
-              <id>default</id>
-              <activation>
-                <activeByDefault>true</activeByDefault>
-              </activation>
-              <repositories>
-                <repository>
-                  <id>central</id>
-                  <url>https://repo.maven.apache.org/maven2</url>
-                  <releases><enabled>true</enabled></releases>
-                  <snapshots><enabled>true</enabled></snapshots>
-                </repository>
-              </repositories>
-            </profile>
-          </profiles>
-          <servers>
-            <server>
-              <id>artifact-registry-repo</id>
-              <username>oauth2accesstoken</username>
-              <password>$AUTH_TOKEN</password>
-            </server>
-          </servers>
-        </settings>
-        EOF
+        gcloud auth activate-service-account api-demo-service-account@angelic-bond-480000-e2.iam.gserviceaccount.com --key-file=/builder/home/google/service_account.json
     waitFor: ['-']
-
+    
   # ##################################################
   # 1. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
   # ##################################################
   - name: 'gcr.io/cloud-builders/mvn'
+    # settings.xml 파일을 사용하여 미러링 설정 적용
     args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
-    waitFor: ['create-settings']
+    waitFor: ['setup-auth'] # 인증 설정 완료 후 실행
     id: 'mvn-package'
 
   # ##################################################
