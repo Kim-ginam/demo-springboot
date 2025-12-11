@@ -26,6 +26,7 @@ steps:
       '--region=asia-northeast3',
       '--platform=managed',
       '--allow-unauthenticated'
+      '--service-account=api-demo-service-account@angelic-bond-480000-e2.iam.gserviceaccount.com'
     ]
 
 images:
