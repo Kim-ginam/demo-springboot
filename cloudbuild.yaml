@@ -1,13 +1,28 @@
 steps:
-  # 0. settings.xml 파일 생성 (인증 헬퍼 사용)
+  # ##################################################
+  # 0. Maven Artifact Registry 인증 설정 (gcloud auth configure-Aptifactory)
+  # ##################################################
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'mvn-auth'
+    entrypoint: 'bash'
+    args: 
+      - '-c'
+      # 🌟 gcloud 명령으로 Artifact Registry에 인증 토큰을 설정
+      - |
+        # 이 명령어는 Cloud Build 워커의 ~/.m2/settings.xml 파일에 인증 정보를 기록하려고 시도합니다.
+        gcloud auth configure-Aptifactory --repository=asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo --project=$PROJECT_ID --quiet
+    waitFor: ['-']
+
+  # ##################################################
+  # 1. settings.xml 파일 생성 (미러링 설정만 포함)
+  # ##################################################
   - name: 'gcr.io/cloud-builders/gcloud'
     id: 'create-settings'
     entrypoint: 'bash'
     args: 
       - '-c'
       - |
-        # 🌟 Maven 인증 헬퍼를 사용하는 settings.xml 내용을 직접 작성합니다.
-        # 이 방식은 Cloud Build 환경에서 가장 안정적으로 인증 문제를 해결합니다.
+        # settings.xml 파일 내용 (인증 정보 없이 미러링 설정만 포함)
         cat > settings.xml << EOF
         <settings>
           <mirrors>
@@ -15,36 +30,32 @@ steps:
               <id>artifact-registry-repo</id>
               <name>AR Mirror</name>
               <url>https://asia-northeast3-maven.pkg.dev/$PROJECT_ID/maven-repo-demo</url>
-              <mirrorOf>central</mirrorOf>
+              <mirrorOf>*</mirrorOf>
             </mirror>
           </mirrors>
-          <servers>
-            <server>
-              <id>artifact-registry-repo</id>
-              <configuration>
-                <auth>
-                  <credentialHelper>google</credentialHelper>
-                </auth>
-              </configuration>
-            </server>
-          </servers>
         </settings>
         EOF
-    waitFor: ['-']
+    waitFor: ['mvn-auth'] # 인증 설정 완료 후 실행
 
-  # 1. Maven 패키징 (이미지 복원)
-  - name: 'gcr.io/cloud-builders/mvn' # 🌟 안정적인 Google 빌더로 복원
+  # ##################################################
+  # 2. Maven 패키징 (JAR 파일 생성 및 의존성 다운로드)
+  # ##################################################
+  - name: 'gcr.io/cloud-builders/mvn'
     args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
     waitFor: ['create-settings']
     id: 'mvn-package'
 
-  # 2. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
-  - name: 'gcr.io/cloud-builders/mvn' # 🌟 안정적인 Google 빌더로 복원
+  # ##################################################
+  # 3. JAR 파일을 Artifact Registry의 Maven 리포지토리에 배포(Deploy)
+  # ##################################################
+  - name: 'gcr.io/cloud-builders/mvn'
     args: ['deploy', '-s', 'settings.xml']
     waitFor: ['mvn-package']
     id: 'mvn-deploy'
 
-  # 3. Docker build (Dockerfile 기반)
+  # ##################################################
+  # 4. Docker build (Dockerfile 기반)
+  # ##################################################
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
@@ -54,7 +65,9 @@ steps:
     waitFor: ['mvn-deploy'] # JAR 파일 배포 완료 후 Docker 빌드 시작
     id: 'docker-build'
 
-  # 4. Docker push
+  # ##################################################
+  # 5. Docker push
+  # ##################################################
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'push',
@@ -63,7 +76,9 @@ steps:
     waitFor: ['docker-build']
     id: 'docker-push'
 
-  # 5. Deploy to Cloud Run
+  # ##################################################
+  # 6. Deploy to Cloud Run
+  # ##################################################
   - name: 'gcr.io/cloud-builders/gcloud'
     args: [
       'run', 'deploy', 'demo-service',
@@ -76,8 +91,10 @@ steps:
     waitFor: ['docker-push']
     id: 'cloud-run-deploy'
 
+# 최종 이미지 결과물 명시
 images:
   - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA'
 
+# 에러 해결을 위해 추가한 옵션
 options:
   logging: CLOUD_LOGGING_ONLY
