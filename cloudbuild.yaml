@@ -1,15 +1,17 @@
+# 1. Build JAR (Cloud Build 환경에서 단 한 번 실행)
 steps:
-  # Build JAR
   - name: 'gcr.io/cloud-builders/mvn'
     args: ['clean', 'package', '-DskipTests']
+# 이 시점에 /workspace/target/demo-app-*.jar 파일이 생성됩니다.
 
-  # Docker build
+# 2. Docker build (수정된 Dockerfile을 사용)
   - name: 'gcr.io/cloud-builders/docker'
     args: [
       'build',
       '-t', 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/demo-repo/demo-app:$COMMIT_SHA',
       '.'
     ]
+
 
   # Docker push
   - name: 'gcr.io/cloud-builders/docker'
