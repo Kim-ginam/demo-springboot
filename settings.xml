@@ -17,6 +17,8 @@
       <configuration>
         <wagonProvider>com.google.cloud.artifactregistry.WagonProvider</wagonProvider>
       </configuration>
+      <username>_token</username>
+      <password>${env.GOOGLE_OAUTH_ACCESS_TOKEN}</password>
     </server>
   </servers>
 
