@@ -1,31 +1,27 @@
-<settings>
-  <mirrors>
-    <mirror>
-      <id>artifact-registry-repo</id>
-      <name>AR Mirror</name>
-      <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
-      <mirrorOf>central</mirrorOf> 
-    </mirror>
-  </mirrors>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                      http://maven.apache.org/xsd/settings-1.0.0.xsd">
 
   <servers>
     <server>
       <id>artifact-registry-repo</id>
-      <username>oauth2accesstoken</username>
-      <password>TOKEN_PLACEHOLDER</password> 
+      <configuration>
+        <authenticationInfoUnknown>true</authenticationInfoUnknown>
+      </configuration>
     </server>
   </servers>
 
   <profiles>
     <profile>
-      <id>default</id>
+      <id>google-artifact-registry</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
       <repositories>
         <repository>
-          <id>central</id>
-          <url>https://repo.maven.apache.org/maven2</url>
+          <id>artifact-registry-repo</id>
+          <url>artifactregistry://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
           <releases><enabled>true</enabled></releases>
           <snapshots><enabled>true</enabled></snapshots>
         </repository>
