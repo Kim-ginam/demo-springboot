@@ -6,7 +6,7 @@
   <mirrors>
     <mirror>
       <id>artifact-registry-repo</id>
-      <mirrorOf>*, !artifactregistry-maven-wagon</mirrorOf>
+      <mirrorOf>*,!artifactregistry-maven-wagon</mirrorOf>
       <url>artifactregistry://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
     </mirror>
   </mirrors>
