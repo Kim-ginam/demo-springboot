@@ -15,6 +15,7 @@
     <server>
       <id>artifact-registry-repo</id>
       <configuration>
+        <wagonProvider>com.google.cloud.artifactregistry.WagonProvider</wagonProvider>
         <authenticationInfoUnknown>true</authenticationInfoUnknown>
       </configuration>
     </server>
