@@ -1,7 +1,15 @@
 # 1. Build JAR (Cloud Build 환경에서 단 한 번 실행)
 steps:
   - name: 'gcr.io/cloud-builders/mvn'
-    args: ['clean', 'package', '-DskipTests', '-s', 'settings.xml']
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # settings.xml 없이 실행하여 인터넷(Central)에서 Wagon을 직접 다운로드합니다.
+        mvn dependency:get -Dartifact=com.google.cloud.artifactregistry:artifactregistry-maven-wagon:2.2.1
+        
+        # 도구가 확보된 상태에서 본 빌드를 수행합니다.
+        mvn clean package -DskipTests -s settings.xml
 # 이 시점에 /workspace/target/demo-app-*.jar 파일이 생성됩니다.
 
 # 2. Docker build (수정된 Dockerfile을 사용)
