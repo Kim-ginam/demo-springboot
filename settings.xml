@@ -3,6 +3,14 @@
   xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
                       http://maven.apache.org/xsd/settings-1.0.0.xsd">
 
+  <mirrors>
+    <mirror>
+      <id>artifact-registry-repo</id>
+      <mirrorOf>*</mirrorOf>
+      <url>artifactregistry://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
+    </mirror>
+  </mirrors>
+
   <servers>
     <server>
       <id>artifact-registry-repo</id>
