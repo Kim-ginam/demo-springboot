@@ -7,10 +7,10 @@
     <mirror>
       <id>artifact-registry-repo</id>
       <mirrorOf>external:*,!com.google.cloud.artifactregistry:*</mirrorOf>
-      <url>https://repo.maven.apache.org/maven2</url>
+      <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/virtual-maven-repo</url>
     </mirror>
   </mirrors>
-<!--
+
   <servers>
     <server>
       <id>artifact-registry-repo</id>
@@ -20,7 +20,7 @@
       </configuration>
     </server>
   </servers>
--->
+
   <profiles>
     <profile>
       <id>google-artifact-registry</id>
