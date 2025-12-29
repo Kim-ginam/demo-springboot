@@ -10,9 +10,9 @@ steps:
         
         # 2. curl로 우리 저장소에서 Wagon을 직접 다운로드 (인증 토큰 수동 전달)
         # 이 단계는 Wagon 없이도 동작합니다.
-        ACCESS_TOKEN=$(gcloud auth print-access-token)
+        ACCESS_TOKEN=$$(gcloud auth print-access-token)
         
-        curl -L -H "Authorization: Bearer $ACCESS_TOKEN" \
+        curl -L -H "Authorization: Bearer $$ACCESS_TOKEN" \
           "https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/internal-maven-release/com/google/cloud/artifactregistry/artifactregistry-maven-wagon/2.2.1/artifactregistry-maven-wagon-2.2.1.jar" \
           -o /root/.m2/ext/artifactregistry-maven-wagon-2.2.1.jar
 
