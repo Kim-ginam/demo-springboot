@@ -58,11 +58,11 @@
     <distributionManagement>
         <snapshotRepository>
             <id>artifact-registry-repo</id>
-            <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
+            <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/virtual-maven-repo</url>
         </snapshotRepository>
         <repository>
             <id>artifact-registry-repo</id>
-            <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/maven-repo-demo</url>
+            <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/virtual-maven-repo</url>
         </repository>
     </distributionManagement>
 </project>
