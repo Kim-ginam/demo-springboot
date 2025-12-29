@@ -6,7 +6,7 @@
   <mirrors>
     <mirror>
       <id>artifact-registry-repo</id>
-      <mirrorOf>central</mirrorOf>
+      <mirrorOf>*</mirrorOf>
       <url>https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/virtual-maven-repo</url>
     </mirror>
   </mirrors>
