@@ -16,7 +16,10 @@ steps:
           "https://asia-northeast3-maven.pkg.dev/angelic-bond-480000-e2/internal-maven-release/com/google/cloud/artifactregistry/artifactregistry-maven-wagon/2.2.1/artifactregistry-maven-wagon-2.2.1.jar" \
           -o /root/.m2/ext/artifactregistry-maven-wagon-2.2.1.jar
 
-        # 4. 빌드 실행
+        # 4. 메이븐이 settings.xml에서 읽을 수 있도록 환경 변수로 등록
+        export GOOGLE_OAUTH_ACCESS_TOKEN=$$ACCESS_TOKEN  
+
+        # 5. 빌드 실행
         mvn clean package -DskipTests -s settings.xml
 
 # 2. Docker build (수정된 Dockerfile을 사용)
