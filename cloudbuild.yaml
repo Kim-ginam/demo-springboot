@@ -36,7 +36,7 @@ steps:
         # 5. 빌드 실행
         mvn clean package -DskipTests -s settings.xml
 
-  # 3. 새로운 캐시 저장 (다음 빌드를 위해)
+ # 3. 새로운 캐시 저장 (다음 빌드를 위해)
   - name: 'gcr.io/cloud-builders/gsutil'
     id: 'push-cache'
     entrypoint: 'bash'
@@ -44,9 +44,14 @@ steps:
       - '-c'
       - |
         echo "새로운 의존성을 캐싱합니다..."
-        # .m2 폴더 전체를 압축하여 GCS에 업로드합니다.
-        tar -czf /workspace/maven-cache.tar.gz -C /root .m2
-        gsutil cp /workspace/maven-cache.tar.gz gs://maven-repo-cache-480000/maven-cache.tar.gz
+        # /root/.m2 폴더가 있는지 확인 후 압축
+        if [ -d /root/.m2 ]; then
+          tar -czf /workspace/maven-cache.tar.gz -C /root .m2
+          gsutil cp /workspace/maven-cache.tar.gz gs://maven-repo-cache-480000/maven-cache.tar.gz
+          echo "캐시 업로드 완료!"
+        else
+          echo "캐싱할 .m2 폴더가 없습니다."
+        fi
 
 
 # 4. Docker build (수정된 Dockerfile을 사용)
